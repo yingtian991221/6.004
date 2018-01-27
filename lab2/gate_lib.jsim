@@ -1,0 +1,61 @@
+* Gate library for lab2 
+.include "../nominal.jsim"
+
+* INVERTER: input: A; output: Z
+.subckt NOT A Z
+MPD1 Z A 0 0 NENH sw=16 sl=1
+MPU1 Z A vdd vdd PENH sw=16 sl=1
+.ends
+
+* NAND: inputs: A, B; output: Z
+.subckt NAND A B Z
+MPD1 Z A 1 0 NENH sw=16 sl=1
+MPD2 1 B 0 0 NENH sw=16 sl=1
+MPU1 Z A vdd vdd PENH sw=11 sl=1
+MPU2 Z B vdd vdd PENH sw=11 sl=1
+.ends
+
+* AND: inputs: A, B; output: Z
+.subckt AND A B Z
+Xsc1 A B C NAND 
+Xsc2 C Z NOT
+.ends
+
+* NOR: inputs: A, B; output: Z
+.subckt NOR A B Z
+MPD1 Z A 0 0 NENH sw=16 sl=1
+MPD2 Z B 0 0 NENH sw=16 sl=1
+MPU1 vdd A 1 vdd PENH sw=11 sl=1
+MPU2 1 B Z vdd PENH sw=11 sl=1
+.ends
+
+* OR: inputs: A, B; output: Z
+.subckt OR A B Z
+Xsc1 A B C NOR 
+Xsc2 C Z NOT
+.ends
+
+* XORSC: inputs: A B C; output: Z
+.subckt XORSC A B C Z
+MPD1 Z A 1 0 NENH sw=2 sl=1
+MPD2 1 B 0 0 NENH sw=2 sl=1
+MPD3 Z C 0 0 NENH sw=2 sl=1
+MPU1 vdd A 2 vdd PENH sw=4 sl=1
+MPU2 vdd B 2 vdd PENH sw=4 sl=1
+MPU3 2 C Z vdd PENH sw=4 sl=1
+.ends
+
+* XOR: inputs: A, B; output: Z
+.subckt XOR A B Z
+Xsc1 A B C NOR
+Xsc2 A B C Z XORSC
+.ends
+
+
+
+
+
+
+
+
+

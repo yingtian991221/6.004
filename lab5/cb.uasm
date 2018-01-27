@@ -1,0 +1,110 @@
+| include instruction macros and test jig
+.include ../beta.uasm
+.include ../lab5checkoff.uasm
+
+count_bull_cows:
+    PUSH(LP)
+    PUSH(BP)
+    MOVE(SP, BP)
+    
+    | Push any registers (besides r0) used in function
+    PUSH(r1)
+    PUSH(r2)
+    PUSH(r3)
+    PUSH(r4)
+    PUSH(r5)
+    PUSH(r6)
+    PUSH(r7)
+    PUSH(r8)
+    PUSH(r9)
+    PUSH(r10)
+    PUSH(r11)
+    PUSH(r12)
+
+    | Get input
+    LD(BP, -12, r3)
+    LD(BP, -16, r4)
+
+    CMOVE(0, r5)
+    CMOVE(0xF, r12)
+
+    | Compute bulls
+    CMOVE(0, r7)
+    BR(endfor1)
+for1:
+    AND(r3, r12, r0)
+    AND(r4, r12, r1)
+    CMPEQ(r0, r1, r2)
+    BEQ(r2, endif1)
+    ADDC(r5, 1, r5)
+    OR(r3, r12, r3)
+    OR(r4, r12, r4)
+endif1:
+    SHLC(r12, 4, r12)
+    ADDC(r7, 1, r7)
+endfor1:
+    CMPLTC(r7, 4, r2)
+    BNE(r2, for1)
+
+    | Compute cows
+    CMOVE(0, r6)
+    CMOVE(0, r7)
+    BR(endfor2)
+for2:
+    ANDC(r3, 0xF, r10)
+    SRAC(r3, 4, r3)
+    CMPEQC(r10, 0xF, r2)
+    BNE(r2, endif2)
+    MOVE(r4, r9)
+    CMOVE(0xF, r12)
+    CMOVE(0, r8)
+    BR(endfor3)
+for3:
+    ANDC(r9, 0xF, r11)
+    SRAC(r9, 4, r9)
+    CMPEQ(r10, r11, r2)
+    BEQ(r2, endif3)
+    ADDC(r6, 1, r6)
+    OR(r4, r12, r4)
+    BR(endif2)
+endif3:
+    SHLC(r12, 4, r12)
+    ADDC(r8, 1, r8)
+endfor3:
+    CMPLTC(r8, 4, r2)
+    BNE(r2, for3)
+endif2:
+    ADDC(r7, 1, r7)
+endfor2:
+    CMPLTC(r7, 4, r2)
+    BNE(r2, for2)
+
+    | Return result
+    SHLC(r5, 4, r1)
+    ADD(r1, r6, r0)
+
+    | Pop saved registers
+    POP(r12)
+    POP(r11)
+    POP(r10)
+    POP(r9)
+    POP(r8)
+    POP(r7)
+    POP(r6)
+    POP(r5)
+    POP(r4)
+    POP(r3)
+    POP(r2)
+    POP(r1)
+
+    MOVE(BP, SP)
+    POP(BP)
+    POP(LP)
+    RTN()
+
+StackBase: LONG(.+4)   | Pointer to bottom of stack
+    . = .+0x1000
+
+
+
+

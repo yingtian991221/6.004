@@ -1,0 +1,25 @@
+* circuit for Lab#1, part F
+.include "../nominal.jsim"
+.include "../lab1checkoff.jsim"
+
+* inputs are A, B, C and output is Z
+.subckt FBAR A B C Z
+MPD1 Z A 1 0 NENH sw=9 sl=1  
+MPD2 1 B 0 0 NENH sw=8 sl=1
+MPD3 X C 0 0 NENH sw=8 sl=1
+MPU1 2 A vdd vdd PENH sw=11 sl=1
+MPU2 2 B vdd vdd PENH sw=11 sl=1
+MPU3 Z C 2 vdd PENH sw=11 sl=1
+.ends
+
+* INVERTER: input is A, output is Z
+.subckt INV A Z
+MPD1 Z A 0 0 NENH sw=16 sl=1
+MPU1 Z A vdd vdd PENH sw=16 sl=1
+.ends
+
+.subckt F A B C Z
+Xsc1 A B C OUT FBAR
+Xsc2 OUT Z INV
+.ends
+

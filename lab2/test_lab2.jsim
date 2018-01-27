@@ -1,0 +1,48 @@
+* Tests for gate library 
+.include "../8clocks.jsim"
+* .include "gate_lib.jsim"
+.include "adder.jsim"
+
+* NOT Test
+/*
+Xtest_NOT clk1 z NOT
+.tran 20ns
+.plot clk1
+.plot z
+*/
+
+* AND Test
+/*
+Xtest_AND clk1 clk2 z AND
+.tran 20ns
+.plot clk1
+.plot clk2
+.plot z
+*/
+
+* OR Test
+/*
+Xtest_OR clk1 clk2 z OR
+.tran 20ns
+.plot clk1
+.plot clk2
+.plot z
+*/
+
+* XOR Test
+/*
+Xtest_XOR clk1 clk2 z XOR
+.tran 20ns
+.plot clk1
+.plot clk2
+.plot z
+*/
+
+* FA Test
+Xtest_FA clk1 clk2 clk3 sum carry FA
+.tran 80ns
+.plot clk1
+.plot clk2
+.plot clk3
+.plot sum
+.plot carry

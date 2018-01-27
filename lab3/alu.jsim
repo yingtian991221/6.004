@@ -1,0 +1,782 @@
+/*
+ * 32-bit ALU for lab3
+ */
+
+.include "../nominal.jsim"
+.include "../stdcell.jsim"
+.include "../lab3checkoff_6.jsim"
+
+/* 
+ * 32-bit ALU
+ */
+
+.subckt alu alufn[5:0] a[31:0] b[31:0] alu[31:0] z v n
+
+Xadd alufn[0] a[31:0] b[31:0] sum[31:0] z v n adder32
+Xboole alufn[3:0] a[31:0] b[31:0] boole[31:0] boole32
+Xshift alufn[1:0] a[31:0] b[4:0] shift[31:0] shift32
+Xcmp alufn[2:1] z v n cmp[31:0] compare32
+* Xmul a[31:0] b[31:0] prod[31:0] mult32
+* Xsum_or_product alufn[1]#32 sum[31:0] prod[31:0] sum_or_prod[31:0] mux2
+* Xalu alufn[4]#32 alufn[5]#32 sum_or_prod[31:0] boole[31:0] shift[31:0] cmp[31:0] alu[31:0] mux4
+Xalu alufn[4]#32 alufn[5]#32 sum[31:0] boole[31:0] shift[31:0] cmp[31:0] alu[31:0] mux4
+
+.ends
+
+/*
+ * 32-bit adder/subtractor
+ */
+.subckt adder32 alufn[0] a[31:0] b[31:0] s[31:0] z v n
+
+Xb b[31:0] alufn[0]#32 xb[31:0] xor2
+.connect alufn[0] ci
+
+Xs0   a0   xb[0]   ci   s[0]    c0   full_adder
+Xs1   a1   xb[1]   c0   s[1]    c1   full_adder
+Xs2   a2   xb[2]   c1   s[2]    c2   full_adder
+Xs3   a3   xb[3]   c2   s[3]    c3   full_adder
+Xs4   a4   xb[4]   c3   s[4]    c4   full_adder
+Xs5   a5   xb[5]   c4   s[5]    c5   full_adder
+Xs6   a6   xb[6]   c5   s[6]    c6   full_adder
+Xs7   a7   xb[7]   c6   s[7]    c7   full_adder
+Xs8   a8   xb[8]   c7   s[8]    c8   full_adder
+Xs9   a9   xb[9]   c8   s[9]    c9   full_adder
+Xs10  a10  xb[10]  c9   s[10]   c10  full_adder
+Xs11  a11  xb[11]  c10  s[11]   c11  full_adder
+Xs12  a12  xb[12]  c11  s[12]   c12  full_adder
+Xs13  a13  xb[13]  c12  s[13]   c13  full_adder
+Xs14  a14  xb[14]  c13  s[14]   c14  full_adder
+Xs15  a15  xb[15]  c14  s[15]   c15  full_adder
+Xs16  a16  xb[16]  c15  s[16]   c16  full_adder
+Xs17  a17  xb[17]  c16  s[17]   c17  full_adder
+Xs18  a18  xb[18]  c17  s[18]   c18  full_adder
+Xs19  a19  xb[19]  c18  s[19]   c19  full_adder
+Xs20  a20  xb[20]  c19  s[20]   c20  full_adder
+Xs21  a21  xb[21]  c20  s[21]   c21  full_adder
+Xs22  a22  xb[22]  c21  s[22]   c22  full_adder
+Xs23  a23  xb[23]  c22  s[23]   c23  full_adder
+Xs24  a24  xb[24]  c23  s[24]   c24  full_adder
+Xs25  a25  xb[25]  c24  s[25]   c25  full_adder
+Xs26  a26  xb[26]  c25  s[26]   c26  full_adder
+Xs27  a27  xb[27]  c26  s[27]   c27  full_adder
+Xs28  a28  xb[28]  c27  s[28]   c28  full_adder
+Xs29  a29  xb[29]  c28  s[29]   c29  full_adder
+Xs30  a30  xb[30]  c29  s[30]   c30  full_adder
+Xs31  a31  xb[31]  c30  s[31]   c31  full_adder
+
+* Zero, Overflow, Negative
+Xz s[31:0] z iszero
+Xv a[31] xb[31] s[31] v overflow
+.connect s[31] n
+
+.ends
+
+/*
+ * Is sum zero? 
+ */
+.subckt iszero s[31:0] zero
+
+Xz0 s[31:24] s[23:16] s[15:8] s[7:0] z0[7:0] or4
+Xz1 z0[7:4] z0[3:0] z1[3:0] or2
+Xz2 z1[3:0] zero nor4
+
+.ends
+
+/*
+ * Has sum overflowed?
+ */
+.subckt overflow a31 b31 s31 ovflow
+
+Xns31 s31  ns31 inverter
+Xna31 a31  na31 inverter
+Xnb31 b31  nb31 inverter
+Xovf1 a31  b31 ns31 ovf1 and3
+Xovf2 na31 nb31 s31 ovf2 and3
+Xovf  ovf1 ovf2 ovflow or2
+
+.ends
+
+/*
+ * Full adder
+ */
+.subckt full_adder a b ci s co
+
+* sum
+Xs1 a b s1 xor2
+Xs2 s1 ci s xor2
+
+* carry out
+Xc1 a b c1 and2
+Xc2 a ci c2 and2
+Xc3 b ci c3 and2
+Xc4 c1 c2 c4 or2
+Xc5 c3 c4 co or2
+
+.ends
+
+/*
+ * 32-bit compare unit
+ */
+.subckt compare32 alufn[2:1] z v n cmp[31:0]
+
+.connect 0 cmp[31:1]
+.connect z eq
+Xlt n v lt xor2
+Xleq z lt leq or2
+Xcmp alufn[2] alufn[1] 0 lt eq leq cmp[0] mux4
+
+.ends
+
+/*
+ * 32-bit boolean unit
+ */
+.subckt boole32 alufn[3:0] a[31:0] b[31:0] boole[31:0]
+
+.connect alufn[0] af0
+.connect alufn[1] af1
+.connect alufn[2] af2
+.connect alufn[3] af3
+Xnaf0 af0 naf0 inverter
+Xnaf2 af2 naf2 inverter
+Xnaf3 af3 naf3 inverter
+
+* (s1, s0): selector inputs for mux4
+Xs00 af3 af2 af1 naf0 s00 and4
+Xs01 naf3 af2 af1 naf0 s01 and4
+Xs0 s00 s01 s0 or2
+
+Xs10 af3 af2 af1 naf0 s10 and4
+Xs11 af3 naf2 af1 naf0 s11 and4
+Xs1 s10 s11 s1 or2
+
+* inputs for mux4
+Xbitand a[31:0] b[31:0] bitand[31:0] and2
+Xbitor a[31:0] b[31:0] bitor[31:0] or2
+Xbitxor a[31:0] b[31:0] bitxor[31:0] xor2
+
+Xboole s0#32 s1#32 bitand[31:0] bitxor[31:0] a[31:0] bitor[31:0] boole[31:0] mux4
+
+.ends
+
+/*
+ * 32-bit shifter 
+ */
+.subckt shift32 alufn[1:0] a[31:0] b[4:0] shift[31:0]
+
+Xshl32 a[31:0] b[4:0] shl[31:0] shl32
+Xshr32 a[31:0] b[4:0] shr[31:0] shr32
+Xsra32 a[31:0] b[4:0] sra[31:0] sra32
+
+Xsh alufn[0]#32 alufn[1]#32 shl[31:0] shr[31:0] 0#32 sra[31:0] shift[31:0] mux4
+
+.ends
+
+/*
+ * 32-bit left shifter
+ */
+.subckt shl32 a[31:0] b[4:0] shift[31:0]
+
+Xsl16 b[4]#32 a[31:0] a[15:0] 0#16 w[31:0]     mux2
+Xsl8  b[3]#32 w[31:0] w[23:0] 0#8  x[31:0]     mux2
+Xsl4  b[2]#32 x[31:0] x[27:0] 0#4  y[31:0]     mux2
+Xsl2  b[1]#32 y[31:0] y[29:0] 0#2  z[31:0]     mux2
+Xsl1  b[0]#32 z[31:0] z[30:0] 0    shift[31:0] mux2
+
+.ends
+
+/*
+ * 32-bit right shifter
+ */
+.subckt shr32 a[31:0] b[4:0] shift[31:0]
+
+Xsr16 b[4]#32 a[31:0] 0#16 a[31:16] w[31:0]     mux2
+Xsr8  b[3]#32 w[31:0] 0#8  w[31:8]  x[31:0]     mux2
+Xsr4  b[2]#32 x[31:0] 0#4  x[31:4]  y[31:0]     mux2
+Xsr2  b[1]#32 y[31:0] 0#2  y[31:2]  z[31:0]     mux2
+Xsr1  b[0]#32 z[31:0] 0    z[31:1]  shift[31:0] mux2
+
+.ends
+
+/*
+ * 32-bit right shifter with sign extension
+ */
+.subckt sra32 a[31:0] b[4:0] shift[31:0]
+
+Xsra16 b[4]#32 a[31:0] a[31]#16 a[31:16] w[31:0]     mux2
+Xsra8  b[3]#32 w[31:0] a[31]#8  w[31:8]  x[31:0]     mux2
+Xsra4  b[2]#32 x[31:0] a[31]#4  x[31:4]  y[31:0]     mux2
+Xsra2  b[1]#32 y[31:0] a[31]#2  y[31:2]  z[31:0]     mux2
+Xsra1  b[0]#32 z[31:0] a[31]    z[31:1]  shift[31:0] mux2
+
+.ends
+
+/*
+ * 32-bit multiplier - generated by mult.py
+ */
+.subckt mult32 a[31:0] b[31:0] p[31:0]
+
+* Partial products
+Xpp0 b[0]#32 a[31:0] pp0[31:0] and2
+Xpp1 b[1]#31 a[30:0] pp1[30:0] and2
+Xpp2 b[2]#30 a[29:0] pp2[29:0] and2
+Xpp3 b[3]#29 a[28:0] pp3[28:0] and2
+Xpp4 b[4]#28 a[27:0] pp4[27:0] and2
+Xpp5 b[5]#27 a[26:0] pp5[26:0] and2
+Xpp6 b[6]#26 a[25:0] pp6[25:0] and2
+Xpp7 b[7]#25 a[24:0] pp7[24:0] and2
+Xpp8 b[8]#24 a[23:0] pp8[23:0] and2
+Xpp9 b[9]#23 a[22:0] pp9[22:0] and2
+Xpp10 b[10]#22 a[21:0] pp10[21:0] and2
+Xpp11 b[11]#21 a[20:0] pp11[20:0] and2
+Xpp12 b[12]#20 a[19:0] pp12[19:0] and2
+Xpp13 b[13]#19 a[18:0] pp13[18:0] and2
+Xpp14 b[14]#18 a[17:0] pp14[17:0] and2
+Xpp15 b[15]#17 a[16:0] pp15[16:0] and2
+Xpp16 b[16]#16 a[15:0] pp16[15:0] and2
+Xpp17 b[17]#15 a[14:0] pp17[14:0] and2
+Xpp18 b[18]#14 a[13:0] pp18[13:0] and2
+Xpp19 b[19]#13 a[12:0] pp19[12:0] and2
+Xpp20 b[20]#12 a[11:0] pp20[11:0] and2
+Xpp21 b[21]#11 a[10:0] pp21[10:0] and2
+Xpp22 b[22]#10 a[9:0] pp22[9:0] and2
+Xpp23 b[23]#9 a[8:0] pp23[8:0] and2
+Xpp24 b[24]#8 a[7:0] pp24[7:0] and2
+Xpp25 b[25]#7 a[6:0] pp25[6:0] and2
+Xpp26 b[26]#6 a[5:0] pp26[5:0] and2
+Xpp27 b[27]#5 a[4:0] pp27[4:0] and2
+Xpp28 b[28]#4 a[3:0] pp28[3:0] and2
+Xpp29 b[29]#3 a[2:0] pp29[2:0] and2
+Xpp30 b[30]#2 a[1:0] pp30[1:0] and2
+Xpp31 b[31] a[0] pp31[0] and2
+
+* Sum of partial products
+.connect pp0[0] p[0]
+
+Xfa10 pp0[1] pp1[0] 0 p[1] co1[0] full_adder
+
+Xfa20 pp0[2] pp1[1] co1[0] sum2[0] co2[0] full_adder
+Xfa21 sum2[0] pp2[0] 0 p[2] co2[1] full_adder
+
+Xfa30 pp0[3] pp1[2] co2[0] sum3[0] co3[0] full_adder
+Xfa31 sum3[0] pp2[1] co2[1] sum3[1] co3[1] full_adder
+Xfa32 sum3[1] pp3[0] 0 p[3] co3[2] full_adder
+
+Xfa40 pp0[4] pp1[3] co3[0] sum4[0] co4[0] full_adder
+Xfa41 sum4[0] pp2[2] co3[1] sum4[1] co4[1] full_adder
+Xfa42 sum4[1] pp3[1] co3[2] sum4[2] co4[2] full_adder
+Xfa43 sum4[2] pp4[0] 0 p[4] co4[3] full_adder
+
+Xfa50 pp0[5] pp1[4] co4[0] sum5[0] co5[0] full_adder
+Xfa51 sum5[0] pp2[3] co4[1] sum5[1] co5[1] full_adder
+Xfa52 sum5[1] pp3[2] co4[2] sum5[2] co5[2] full_adder
+Xfa53 sum5[2] pp4[1] co4[3] sum5[3] co5[3] full_adder
+Xfa54 sum5[3] pp5[0] 0 p[5] co5[4] full_adder
+
+Xfa60 pp0[6] pp1[5] co5[0] sum6[0] co6[0] full_adder
+Xfa61 sum6[0] pp2[4] co5[1] sum6[1] co6[1] full_adder
+Xfa62 sum6[1] pp3[3] co5[2] sum6[2] co6[2] full_adder
+Xfa63 sum6[2] pp4[2] co5[3] sum6[3] co6[3] full_adder
+Xfa64 sum6[3] pp5[1] co5[4] sum6[4] co6[4] full_adder
+Xfa65 sum6[4] pp6[0] 0 p[6] co6[5] full_adder
+
+Xfa70 pp0[7] pp1[6] co6[0] sum7[0] co7[0] full_adder
+Xfa71 sum7[0] pp2[5] co6[1] sum7[1] co7[1] full_adder
+Xfa72 sum7[1] pp3[4] co6[2] sum7[2] co7[2] full_adder
+Xfa73 sum7[2] pp4[3] co6[3] sum7[3] co7[3] full_adder
+Xfa74 sum7[3] pp5[2] co6[4] sum7[4] co7[4] full_adder
+Xfa75 sum7[4] pp6[1] co6[5] sum7[5] co7[5] full_adder
+Xfa76 sum7[5] pp7[0] 0 p[7] co7[6] full_adder
+
+Xfa80 pp0[8] pp1[7] co7[0] sum8[0] co8[0] full_adder
+Xfa81 sum8[0] pp2[6] co7[1] sum8[1] co8[1] full_adder
+Xfa82 sum8[1] pp3[5] co7[2] sum8[2] co8[2] full_adder
+Xfa83 sum8[2] pp4[4] co7[3] sum8[3] co8[3] full_adder
+Xfa84 sum8[3] pp5[3] co7[4] sum8[4] co8[4] full_adder
+Xfa85 sum8[4] pp6[2] co7[5] sum8[5] co8[5] full_adder
+Xfa86 sum8[5] pp7[1] co7[6] sum8[6] co8[6] full_adder
+Xfa87 sum8[6] pp8[0] 0 p[8] co8[7] full_adder
+
+Xfa90 pp0[9] pp1[8] co8[0] sum9[0] co9[0] full_adder
+Xfa91 sum9[0] pp2[7] co8[1] sum9[1] co9[1] full_adder
+Xfa92 sum9[1] pp3[6] co8[2] sum9[2] co9[2] full_adder
+Xfa93 sum9[2] pp4[5] co8[3] sum9[3] co9[3] full_adder
+Xfa94 sum9[3] pp5[4] co8[4] sum9[4] co9[4] full_adder
+Xfa95 sum9[4] pp6[3] co8[5] sum9[5] co9[5] full_adder
+Xfa96 sum9[5] pp7[2] co8[6] sum9[6] co9[6] full_adder
+Xfa97 sum9[6] pp8[1] co8[7] sum9[7] co9[7] full_adder
+Xfa98 sum9[7] pp9[0] 0 p[9] co9[8] full_adder
+
+Xfa100 pp0[10] pp1[9] co9[0] sum10[0] co10[0] full_adder
+Xfa101 sum10[0] pp2[8] co9[1] sum10[1] co10[1] full_adder
+Xfa102 sum10[1] pp3[7] co9[2] sum10[2] co10[2] full_adder
+Xfa103 sum10[2] pp4[6] co9[3] sum10[3] co10[3] full_adder
+Xfa104 sum10[3] pp5[5] co9[4] sum10[4] co10[4] full_adder
+Xfa105 sum10[4] pp6[4] co9[5] sum10[5] co10[5] full_adder
+Xfa106 sum10[5] pp7[3] co9[6] sum10[6] co10[6] full_adder
+Xfa107 sum10[6] pp8[2] co9[7] sum10[7] co10[7] full_adder
+Xfa108 sum10[7] pp9[1] co9[8] sum10[8] co10[8] full_adder
+Xfa109 sum10[8] pp10[0] 0 p[10] co10[9] full_adder
+
+Xfa110 pp0[11] pp1[10] co10[0] sum11[0] co11[0] full_adder
+Xfa111 sum11[0] pp2[9] co10[1] sum11[1] co11[1] full_adder
+Xfa112 sum11[1] pp3[8] co10[2] sum11[2] co11[2] full_adder
+Xfa113 sum11[2] pp4[7] co10[3] sum11[3] co11[3] full_adder
+Xfa114 sum11[3] pp5[6] co10[4] sum11[4] co11[4] full_adder
+Xfa115 sum11[4] pp6[5] co10[5] sum11[5] co11[5] full_adder
+Xfa116 sum11[5] pp7[4] co10[6] sum11[6] co11[6] full_adder
+Xfa117 sum11[6] pp8[3] co10[7] sum11[7] co11[7] full_adder
+Xfa118 sum11[7] pp9[2] co10[8] sum11[8] co11[8] full_adder
+Xfa119 sum11[8] pp10[1] co10[9] sum11[9] co11[9] full_adder
+Xfa1110 sum11[9] pp11[0] 0 p[11] co11[10] full_adder
+
+Xfa120 pp0[12] pp1[11] co11[0] sum12[0] co12[0] full_adder
+Xfa121 sum12[0] pp2[10] co11[1] sum12[1] co12[1] full_adder
+Xfa122 sum12[1] pp3[9] co11[2] sum12[2] co12[2] full_adder
+Xfa123 sum12[2] pp4[8] co11[3] sum12[3] co12[3] full_adder
+Xfa124 sum12[3] pp5[7] co11[4] sum12[4] co12[4] full_adder
+Xfa125 sum12[4] pp6[6] co11[5] sum12[5] co12[5] full_adder
+Xfa126 sum12[5] pp7[5] co11[6] sum12[6] co12[6] full_adder
+Xfa127 sum12[6] pp8[4] co11[7] sum12[7] co12[7] full_adder
+Xfa128 sum12[7] pp9[3] co11[8] sum12[8] co12[8] full_adder
+Xfa129 sum12[8] pp10[2] co11[9] sum12[9] co12[9] full_adder
+Xfa1210 sum12[9] pp11[1] co11[10] sum12[10] co12[10] full_adder
+Xfa1211 sum12[10] pp12[0] 0 p[12] co12[11] full_adder
+
+Xfa130 pp0[13] pp1[12] co12[0] sum13[0] co13[0] full_adder
+Xfa131 sum13[0] pp2[11] co12[1] sum13[1] co13[1] full_adder
+Xfa132 sum13[1] pp3[10] co12[2] sum13[2] co13[2] full_adder
+Xfa133 sum13[2] pp4[9] co12[3] sum13[3] co13[3] full_adder
+Xfa134 sum13[3] pp5[8] co12[4] sum13[4] co13[4] full_adder
+Xfa135 sum13[4] pp6[7] co12[5] sum13[5] co13[5] full_adder
+Xfa136 sum13[5] pp7[6] co12[6] sum13[6] co13[6] full_adder
+Xfa137 sum13[6] pp8[5] co12[7] sum13[7] co13[7] full_adder
+Xfa138 sum13[7] pp9[4] co12[8] sum13[8] co13[8] full_adder
+Xfa139 sum13[8] pp10[3] co12[9] sum13[9] co13[9] full_adder
+Xfa1310 sum13[9] pp11[2] co12[10] sum13[10] co13[10] full_adder
+Xfa1311 sum13[10] pp12[1] co12[11] sum13[11] co13[11] full_adder
+Xfa1312 sum13[11] pp13[0] 0 p[13] co13[12] full_adder
+
+Xfa140 pp0[14] pp1[13] co13[0] sum14[0] co14[0] full_adder
+Xfa141 sum14[0] pp2[12] co13[1] sum14[1] co14[1] full_adder
+Xfa142 sum14[1] pp3[11] co13[2] sum14[2] co14[2] full_adder
+Xfa143 sum14[2] pp4[10] co13[3] sum14[3] co14[3] full_adder
+Xfa144 sum14[3] pp5[9] co13[4] sum14[4] co14[4] full_adder
+Xfa145 sum14[4] pp6[8] co13[5] sum14[5] co14[5] full_adder
+Xfa146 sum14[5] pp7[7] co13[6] sum14[6] co14[6] full_adder
+Xfa147 sum14[6] pp8[6] co13[7] sum14[7] co14[7] full_adder
+Xfa148 sum14[7] pp9[5] co13[8] sum14[8] co14[8] full_adder
+Xfa149 sum14[8] pp10[4] co13[9] sum14[9] co14[9] full_adder
+Xfa1410 sum14[9] pp11[3] co13[10] sum14[10] co14[10] full_adder
+Xfa1411 sum14[10] pp12[2] co13[11] sum14[11] co14[11] full_adder
+Xfa1412 sum14[11] pp13[1] co13[12] sum14[12] co14[12] full_adder
+Xfa1413 sum14[12] pp14[0] 0 p[14] co14[13] full_adder
+
+Xfa150 pp0[15] pp1[14] co14[0] sum15[0] co15[0] full_adder
+Xfa151 sum15[0] pp2[13] co14[1] sum15[1] co15[1] full_adder
+Xfa152 sum15[1] pp3[12] co14[2] sum15[2] co15[2] full_adder
+Xfa153 sum15[2] pp4[11] co14[3] sum15[3] co15[3] full_adder
+Xfa154 sum15[3] pp5[10] co14[4] sum15[4] co15[4] full_adder
+Xfa155 sum15[4] pp6[9] co14[5] sum15[5] co15[5] full_adder
+Xfa156 sum15[5] pp7[8] co14[6] sum15[6] co15[6] full_adder
+Xfa157 sum15[6] pp8[7] co14[7] sum15[7] co15[7] full_adder
+Xfa158 sum15[7] pp9[6] co14[8] sum15[8] co15[8] full_adder
+Xfa159 sum15[8] pp10[5] co14[9] sum15[9] co15[9] full_adder
+Xfa1510 sum15[9] pp11[4] co14[10] sum15[10] co15[10] full_adder
+Xfa1511 sum15[10] pp12[3] co14[11] sum15[11] co15[11] full_adder
+Xfa1512 sum15[11] pp13[2] co14[12] sum15[12] co15[12] full_adder
+Xfa1513 sum15[12] pp14[1] co14[13] sum15[13] co15[13] full_adder
+Xfa1514 sum15[13] pp15[0] 0 p[15] co15[14] full_adder
+
+Xfa160 pp0[16] pp1[15] co15[0] sum16[0] co16[0] full_adder
+Xfa161 sum16[0] pp2[14] co15[1] sum16[1] co16[1] full_adder
+Xfa162 sum16[1] pp3[13] co15[2] sum16[2] co16[2] full_adder
+Xfa163 sum16[2] pp4[12] co15[3] sum16[3] co16[3] full_adder
+Xfa164 sum16[3] pp5[11] co15[4] sum16[4] co16[4] full_adder
+Xfa165 sum16[4] pp6[10] co15[5] sum16[5] co16[5] full_adder
+Xfa166 sum16[5] pp7[9] co15[6] sum16[6] co16[6] full_adder
+Xfa167 sum16[6] pp8[8] co15[7] sum16[7] co16[7] full_adder
+Xfa168 sum16[7] pp9[7] co15[8] sum16[8] co16[8] full_adder
+Xfa169 sum16[8] pp10[6] co15[9] sum16[9] co16[9] full_adder
+Xfa1610 sum16[9] pp11[5] co15[10] sum16[10] co16[10] full_adder
+Xfa1611 sum16[10] pp12[4] co15[11] sum16[11] co16[11] full_adder
+Xfa1612 sum16[11] pp13[3] co15[12] sum16[12] co16[12] full_adder
+Xfa1613 sum16[12] pp14[2] co15[13] sum16[13] co16[13] full_adder
+Xfa1614 sum16[13] pp15[1] co15[14] sum16[14] co16[14] full_adder
+Xfa1615 sum16[14] pp16[0] 0 p[16] co16[15] full_adder
+
+Xfa170 pp0[17] pp1[16] co16[0] sum17[0] co17[0] full_adder
+Xfa171 sum17[0] pp2[15] co16[1] sum17[1] co17[1] full_adder
+Xfa172 sum17[1] pp3[14] co16[2] sum17[2] co17[2] full_adder
+Xfa173 sum17[2] pp4[13] co16[3] sum17[3] co17[3] full_adder
+Xfa174 sum17[3] pp5[12] co16[4] sum17[4] co17[4] full_adder
+Xfa175 sum17[4] pp6[11] co16[5] sum17[5] co17[5] full_adder
+Xfa176 sum17[5] pp7[10] co16[6] sum17[6] co17[6] full_adder
+Xfa177 sum17[6] pp8[9] co16[7] sum17[7] co17[7] full_adder
+Xfa178 sum17[7] pp9[8] co16[8] sum17[8] co17[8] full_adder
+Xfa179 sum17[8] pp10[7] co16[9] sum17[9] co17[9] full_adder
+Xfa1710 sum17[9] pp11[6] co16[10] sum17[10] co17[10] full_adder
+Xfa1711 sum17[10] pp12[5] co16[11] sum17[11] co17[11] full_adder
+Xfa1712 sum17[11] pp13[4] co16[12] sum17[12] co17[12] full_adder
+Xfa1713 sum17[12] pp14[3] co16[13] sum17[13] co17[13] full_adder
+Xfa1714 sum17[13] pp15[2] co16[14] sum17[14] co17[14] full_adder
+Xfa1715 sum17[14] pp16[1] co16[15] sum17[15] co17[15] full_adder
+Xfa1716 sum17[15] pp17[0] 0 p[17] co17[16] full_adder
+
+Xfa180 pp0[18] pp1[17] co17[0] sum18[0] co18[0] full_adder
+Xfa181 sum18[0] pp2[16] co17[1] sum18[1] co18[1] full_adder
+Xfa182 sum18[1] pp3[15] co17[2] sum18[2] co18[2] full_adder
+Xfa183 sum18[2] pp4[14] co17[3] sum18[3] co18[3] full_adder
+Xfa184 sum18[3] pp5[13] co17[4] sum18[4] co18[4] full_adder
+Xfa185 sum18[4] pp6[12] co17[5] sum18[5] co18[5] full_adder
+Xfa186 sum18[5] pp7[11] co17[6] sum18[6] co18[6] full_adder
+Xfa187 sum18[6] pp8[10] co17[7] sum18[7] co18[7] full_adder
+Xfa188 sum18[7] pp9[9] co17[8] sum18[8] co18[8] full_adder
+Xfa189 sum18[8] pp10[8] co17[9] sum18[9] co18[9] full_adder
+Xfa1810 sum18[9] pp11[7] co17[10] sum18[10] co18[10] full_adder
+Xfa1811 sum18[10] pp12[6] co17[11] sum18[11] co18[11] full_adder
+Xfa1812 sum18[11] pp13[5] co17[12] sum18[12] co18[12] full_adder
+Xfa1813 sum18[12] pp14[4] co17[13] sum18[13] co18[13] full_adder
+Xfa1814 sum18[13] pp15[3] co17[14] sum18[14] co18[14] full_adder
+Xfa1815 sum18[14] pp16[2] co17[15] sum18[15] co18[15] full_adder
+Xfa1816 sum18[15] pp17[1] co17[16] sum18[16] co18[16] full_adder
+Xfa1817 sum18[16] pp18[0] 0 p[18] co18[17] full_adder
+
+Xfa190 pp0[19] pp1[18] co18[0] sum19[0] co19[0] full_adder
+Xfa191 sum19[0] pp2[17] co18[1] sum19[1] co19[1] full_adder
+Xfa192 sum19[1] pp3[16] co18[2] sum19[2] co19[2] full_adder
+Xfa193 sum19[2] pp4[15] co18[3] sum19[3] co19[3] full_adder
+Xfa194 sum19[3] pp5[14] co18[4] sum19[4] co19[4] full_adder
+Xfa195 sum19[4] pp6[13] co18[5] sum19[5] co19[5] full_adder
+Xfa196 sum19[5] pp7[12] co18[6] sum19[6] co19[6] full_adder
+Xfa197 sum19[6] pp8[11] co18[7] sum19[7] co19[7] full_adder
+Xfa198 sum19[7] pp9[10] co18[8] sum19[8] co19[8] full_adder
+Xfa199 sum19[8] pp10[9] co18[9] sum19[9] co19[9] full_adder
+Xfa1910 sum19[9] pp11[8] co18[10] sum19[10] co19[10] full_adder
+Xfa1911 sum19[10] pp12[7] co18[11] sum19[11] co19[11] full_adder
+Xfa1912 sum19[11] pp13[6] co18[12] sum19[12] co19[12] full_adder
+Xfa1913 sum19[12] pp14[5] co18[13] sum19[13] co19[13] full_adder
+Xfa1914 sum19[13] pp15[4] co18[14] sum19[14] co19[14] full_adder
+Xfa1915 sum19[14] pp16[3] co18[15] sum19[15] co19[15] full_adder
+Xfa1916 sum19[15] pp17[2] co18[16] sum19[16] co19[16] full_adder
+Xfa1917 sum19[16] pp18[1] co18[17] sum19[17] co19[17] full_adder
+Xfa1918 sum19[17] pp19[0] 0 p[19] co19[18] full_adder
+
+Xfa200 pp0[20] pp1[19] co19[0] sum20[0] co20[0] full_adder
+Xfa201 sum20[0] pp2[18] co19[1] sum20[1] co20[1] full_adder
+Xfa202 sum20[1] pp3[17] co19[2] sum20[2] co20[2] full_adder
+Xfa203 sum20[2] pp4[16] co19[3] sum20[3] co20[3] full_adder
+Xfa204 sum20[3] pp5[15] co19[4] sum20[4] co20[4] full_adder
+Xfa205 sum20[4] pp6[14] co19[5] sum20[5] co20[5] full_adder
+Xfa206 sum20[5] pp7[13] co19[6] sum20[6] co20[6] full_adder
+Xfa207 sum20[6] pp8[12] co19[7] sum20[7] co20[7] full_adder
+Xfa208 sum20[7] pp9[11] co19[8] sum20[8] co20[8] full_adder
+Xfa209 sum20[8] pp10[10] co19[9] sum20[9] co20[9] full_adder
+Xfa2010 sum20[9] pp11[9] co19[10] sum20[10] co20[10] full_adder
+Xfa2011 sum20[10] pp12[8] co19[11] sum20[11] co20[11] full_adder
+Xfa2012 sum20[11] pp13[7] co19[12] sum20[12] co20[12] full_adder
+Xfa2013 sum20[12] pp14[6] co19[13] sum20[13] co20[13] full_adder
+Xfa2014 sum20[13] pp15[5] co19[14] sum20[14] co20[14] full_adder
+Xfa2015 sum20[14] pp16[4] co19[15] sum20[15] co20[15] full_adder
+Xfa2016 sum20[15] pp17[3] co19[16] sum20[16] co20[16] full_adder
+Xfa2017 sum20[16] pp18[2] co19[17] sum20[17] co20[17] full_adder
+Xfa2018 sum20[17] pp19[1] co19[18] sum20[18] co20[18] full_adder
+Xfa2019 sum20[18] pp20[0] 0 p[20] co20[19] full_adder
+
+Xfa210 pp0[21] pp1[20] co20[0] sum21[0] co21[0] full_adder
+Xfa211 sum21[0] pp2[19] co20[1] sum21[1] co21[1] full_adder
+Xfa212 sum21[1] pp3[18] co20[2] sum21[2] co21[2] full_adder
+Xfa213 sum21[2] pp4[17] co20[3] sum21[3] co21[3] full_adder
+Xfa214 sum21[3] pp5[16] co20[4] sum21[4] co21[4] full_adder
+Xfa215 sum21[4] pp6[15] co20[5] sum21[5] co21[5] full_adder
+Xfa216 sum21[5] pp7[14] co20[6] sum21[6] co21[6] full_adder
+Xfa217 sum21[6] pp8[13] co20[7] sum21[7] co21[7] full_adder
+Xfa218 sum21[7] pp9[12] co20[8] sum21[8] co21[8] full_adder
+Xfa219 sum21[8] pp10[11] co20[9] sum21[9] co21[9] full_adder
+Xfa2110 sum21[9] pp11[10] co20[10] sum21[10] co21[10] full_adder
+Xfa2111 sum21[10] pp12[9] co20[11] sum21[11] co21[11] full_adder
+Xfa2112 sum21[11] pp13[8] co20[12] sum21[12] co21[12] full_adder
+Xfa2113 sum21[12] pp14[7] co20[13] sum21[13] co21[13] full_adder
+Xfa2114 sum21[13] pp15[6] co20[14] sum21[14] co21[14] full_adder
+Xfa2115 sum21[14] pp16[5] co20[15] sum21[15] co21[15] full_adder
+Xfa2116 sum21[15] pp17[4] co20[16] sum21[16] co21[16] full_adder
+Xfa2117 sum21[16] pp18[3] co20[17] sum21[17] co21[17] full_adder
+Xfa2118 sum21[17] pp19[2] co20[18] sum21[18] co21[18] full_adder
+Xfa2119 sum21[18] pp20[1] co20[19] sum21[19] co21[19] full_adder
+Xfa2120 sum21[19] pp21[0] 0 p[21] co21[20] full_adder
+
+Xfa220 pp0[22] pp1[21] co21[0] sum22[0] co22[0] full_adder
+Xfa221 sum22[0] pp2[20] co21[1] sum22[1] co22[1] full_adder
+Xfa222 sum22[1] pp3[19] co21[2] sum22[2] co22[2] full_adder
+Xfa223 sum22[2] pp4[18] co21[3] sum22[3] co22[3] full_adder
+Xfa224 sum22[3] pp5[17] co21[4] sum22[4] co22[4] full_adder
+Xfa225 sum22[4] pp6[16] co21[5] sum22[5] co22[5] full_adder
+Xfa226 sum22[5] pp7[15] co21[6] sum22[6] co22[6] full_adder
+Xfa227 sum22[6] pp8[14] co21[7] sum22[7] co22[7] full_adder
+Xfa228 sum22[7] pp9[13] co21[8] sum22[8] co22[8] full_adder
+Xfa229 sum22[8] pp10[12] co21[9] sum22[9] co22[9] full_adder
+Xfa2210 sum22[9] pp11[11] co21[10] sum22[10] co22[10] full_adder
+Xfa2211 sum22[10] pp12[10] co21[11] sum22[11] co22[11] full_adder
+Xfa2212 sum22[11] pp13[9] co21[12] sum22[12] co22[12] full_adder
+Xfa2213 sum22[12] pp14[8] co21[13] sum22[13] co22[13] full_adder
+Xfa2214 sum22[13] pp15[7] co21[14] sum22[14] co22[14] full_adder
+Xfa2215 sum22[14] pp16[6] co21[15] sum22[15] co22[15] full_adder
+Xfa2216 sum22[15] pp17[5] co21[16] sum22[16] co22[16] full_adder
+Xfa2217 sum22[16] pp18[4] co21[17] sum22[17] co22[17] full_adder
+Xfa2218 sum22[17] pp19[3] co21[18] sum22[18] co22[18] full_adder
+Xfa2219 sum22[18] pp20[2] co21[19] sum22[19] co22[19] full_adder
+Xfa2220 sum22[19] pp21[1] co21[20] sum22[20] co22[20] full_adder
+Xfa2221 sum22[20] pp22[0] 0 p[22] co22[21] full_adder
+
+Xfa230 pp0[23] pp1[22] co22[0] sum23[0] co23[0] full_adder
+Xfa231 sum23[0] pp2[21] co22[1] sum23[1] co23[1] full_adder
+Xfa232 sum23[1] pp3[20] co22[2] sum23[2] co23[2] full_adder
+Xfa233 sum23[2] pp4[19] co22[3] sum23[3] co23[3] full_adder
+Xfa234 sum23[3] pp5[18] co22[4] sum23[4] co23[4] full_adder
+Xfa235 sum23[4] pp6[17] co22[5] sum23[5] co23[5] full_adder
+Xfa236 sum23[5] pp7[16] co22[6] sum23[6] co23[6] full_adder
+Xfa237 sum23[6] pp8[15] co22[7] sum23[7] co23[7] full_adder
+Xfa238 sum23[7] pp9[14] co22[8] sum23[8] co23[8] full_adder
+Xfa239 sum23[8] pp10[13] co22[9] sum23[9] co23[9] full_adder
+Xfa2310 sum23[9] pp11[12] co22[10] sum23[10] co23[10] full_adder
+Xfa2311 sum23[10] pp12[11] co22[11] sum23[11] co23[11] full_adder
+Xfa2312 sum23[11] pp13[10] co22[12] sum23[12] co23[12] full_adder
+Xfa2313 sum23[12] pp14[9] co22[13] sum23[13] co23[13] full_adder
+Xfa2314 sum23[13] pp15[8] co22[14] sum23[14] co23[14] full_adder
+Xfa2315 sum23[14] pp16[7] co22[15] sum23[15] co23[15] full_adder
+Xfa2316 sum23[15] pp17[6] co22[16] sum23[16] co23[16] full_adder
+Xfa2317 sum23[16] pp18[5] co22[17] sum23[17] co23[17] full_adder
+Xfa2318 sum23[17] pp19[4] co22[18] sum23[18] co23[18] full_adder
+Xfa2319 sum23[18] pp20[3] co22[19] sum23[19] co23[19] full_adder
+Xfa2320 sum23[19] pp21[2] co22[20] sum23[20] co23[20] full_adder
+Xfa2321 sum23[20] pp22[1] co22[21] sum23[21] co23[21] full_adder
+Xfa2322 sum23[21] pp23[0] 0 p[23] co23[22] full_adder
+
+Xfa240 pp0[24] pp1[23] co23[0] sum24[0] co24[0] full_adder
+Xfa241 sum24[0] pp2[22] co23[1] sum24[1] co24[1] full_adder
+Xfa242 sum24[1] pp3[21] co23[2] sum24[2] co24[2] full_adder
+Xfa243 sum24[2] pp4[20] co23[3] sum24[3] co24[3] full_adder
+Xfa244 sum24[3] pp5[19] co23[4] sum24[4] co24[4] full_adder
+Xfa245 sum24[4] pp6[18] co23[5] sum24[5] co24[5] full_adder
+Xfa246 sum24[5] pp7[17] co23[6] sum24[6] co24[6] full_adder
+Xfa247 sum24[6] pp8[16] co23[7] sum24[7] co24[7] full_adder
+Xfa248 sum24[7] pp9[15] co23[8] sum24[8] co24[8] full_adder
+Xfa249 sum24[8] pp10[14] co23[9] sum24[9] co24[9] full_adder
+Xfa2410 sum24[9] pp11[13] co23[10] sum24[10] co24[10] full_adder
+Xfa2411 sum24[10] pp12[12] co23[11] sum24[11] co24[11] full_adder
+Xfa2412 sum24[11] pp13[11] co23[12] sum24[12] co24[12] full_adder
+Xfa2413 sum24[12] pp14[10] co23[13] sum24[13] co24[13] full_adder
+Xfa2414 sum24[13] pp15[9] co23[14] sum24[14] co24[14] full_adder
+Xfa2415 sum24[14] pp16[8] co23[15] sum24[15] co24[15] full_adder
+Xfa2416 sum24[15] pp17[7] co23[16] sum24[16] co24[16] full_adder
+Xfa2417 sum24[16] pp18[6] co23[17] sum24[17] co24[17] full_adder
+Xfa2418 sum24[17] pp19[5] co23[18] sum24[18] co24[18] full_adder
+Xfa2419 sum24[18] pp20[4] co23[19] sum24[19] co24[19] full_adder
+Xfa2420 sum24[19] pp21[3] co23[20] sum24[20] co24[20] full_adder
+Xfa2421 sum24[20] pp22[2] co23[21] sum24[21] co24[21] full_adder
+Xfa2422 sum24[21] pp23[1] co23[22] sum24[22] co24[22] full_adder
+Xfa2423 sum24[22] pp24[0] 0 p[24] co24[23] full_adder
+
+Xfa250 pp0[25] pp1[24] co24[0] sum25[0] co25[0] full_adder
+Xfa251 sum25[0] pp2[23] co24[1] sum25[1] co25[1] full_adder
+Xfa252 sum25[1] pp3[22] co24[2] sum25[2] co25[2] full_adder
+Xfa253 sum25[2] pp4[21] co24[3] sum25[3] co25[3] full_adder
+Xfa254 sum25[3] pp5[20] co24[4] sum25[4] co25[4] full_adder
+Xfa255 sum25[4] pp6[19] co24[5] sum25[5] co25[5] full_adder
+Xfa256 sum25[5] pp7[18] co24[6] sum25[6] co25[6] full_adder
+Xfa257 sum25[6] pp8[17] co24[7] sum25[7] co25[7] full_adder
+Xfa258 sum25[7] pp9[16] co24[8] sum25[8] co25[8] full_adder
+Xfa259 sum25[8] pp10[15] co24[9] sum25[9] co25[9] full_adder
+Xfa2510 sum25[9] pp11[14] co24[10] sum25[10] co25[10] full_adder
+Xfa2511 sum25[10] pp12[13] co24[11] sum25[11] co25[11] full_adder
+Xfa2512 sum25[11] pp13[12] co24[12] sum25[12] co25[12] full_adder
+Xfa2513 sum25[12] pp14[11] co24[13] sum25[13] co25[13] full_adder
+Xfa2514 sum25[13] pp15[10] co24[14] sum25[14] co25[14] full_adder
+Xfa2515 sum25[14] pp16[9] co24[15] sum25[15] co25[15] full_adder
+Xfa2516 sum25[15] pp17[8] co24[16] sum25[16] co25[16] full_adder
+Xfa2517 sum25[16] pp18[7] co24[17] sum25[17] co25[17] full_adder
+Xfa2518 sum25[17] pp19[6] co24[18] sum25[18] co25[18] full_adder
+Xfa2519 sum25[18] pp20[5] co24[19] sum25[19] co25[19] full_adder
+Xfa2520 sum25[19] pp21[4] co24[20] sum25[20] co25[20] full_adder
+Xfa2521 sum25[20] pp22[3] co24[21] sum25[21] co25[21] full_adder
+Xfa2522 sum25[21] pp23[2] co24[22] sum25[22] co25[22] full_adder
+Xfa2523 sum25[22] pp24[1] co24[23] sum25[23] co25[23] full_adder
+Xfa2524 sum25[23] pp25[0] 0 p[25] co25[24] full_adder
+
+Xfa260 pp0[26] pp1[25] co25[0] sum26[0] co26[0] full_adder
+Xfa261 sum26[0] pp2[24] co25[1] sum26[1] co26[1] full_adder
+Xfa262 sum26[1] pp3[23] co25[2] sum26[2] co26[2] full_adder
+Xfa263 sum26[2] pp4[22] co25[3] sum26[3] co26[3] full_adder
+Xfa264 sum26[3] pp5[21] co25[4] sum26[4] co26[4] full_adder
+Xfa265 sum26[4] pp6[20] co25[5] sum26[5] co26[5] full_adder
+Xfa266 sum26[5] pp7[19] co25[6] sum26[6] co26[6] full_adder
+Xfa267 sum26[6] pp8[18] co25[7] sum26[7] co26[7] full_adder
+Xfa268 sum26[7] pp9[17] co25[8] sum26[8] co26[8] full_adder
+Xfa269 sum26[8] pp10[16] co25[9] sum26[9] co26[9] full_adder
+Xfa2610 sum26[9] pp11[15] co25[10] sum26[10] co26[10] full_adder
+Xfa2611 sum26[10] pp12[14] co25[11] sum26[11] co26[11] full_adder
+Xfa2612 sum26[11] pp13[13] co25[12] sum26[12] co26[12] full_adder
+Xfa2613 sum26[12] pp14[12] co25[13] sum26[13] co26[13] full_adder
+Xfa2614 sum26[13] pp15[11] co25[14] sum26[14] co26[14] full_adder
+Xfa2615 sum26[14] pp16[10] co25[15] sum26[15] co26[15] full_adder
+Xfa2616 sum26[15] pp17[9] co25[16] sum26[16] co26[16] full_adder
+Xfa2617 sum26[16] pp18[8] co25[17] sum26[17] co26[17] full_adder
+Xfa2618 sum26[17] pp19[7] co25[18] sum26[18] co26[18] full_adder
+Xfa2619 sum26[18] pp20[6] co25[19] sum26[19] co26[19] full_adder
+Xfa2620 sum26[19] pp21[5] co25[20] sum26[20] co26[20] full_adder
+Xfa2621 sum26[20] pp22[4] co25[21] sum26[21] co26[21] full_adder
+Xfa2622 sum26[21] pp23[3] co25[22] sum26[22] co26[22] full_adder
+Xfa2623 sum26[22] pp24[2] co25[23] sum26[23] co26[23] full_adder
+Xfa2624 sum26[23] pp25[1] co25[24] sum26[24] co26[24] full_adder
+Xfa2625 sum26[24] pp26[0] 0 p[26] co26[25] full_adder
+
+Xfa270 pp0[27] pp1[26] co26[0] sum27[0] co27[0] full_adder
+Xfa271 sum27[0] pp2[25] co26[1] sum27[1] co27[1] full_adder
+Xfa272 sum27[1] pp3[24] co26[2] sum27[2] co27[2] full_adder
+Xfa273 sum27[2] pp4[23] co26[3] sum27[3] co27[3] full_adder
+Xfa274 sum27[3] pp5[22] co26[4] sum27[4] co27[4] full_adder
+Xfa275 sum27[4] pp6[21] co26[5] sum27[5] co27[5] full_adder
+Xfa276 sum27[5] pp7[20] co26[6] sum27[6] co27[6] full_adder
+Xfa277 sum27[6] pp8[19] co26[7] sum27[7] co27[7] full_adder
+Xfa278 sum27[7] pp9[18] co26[8] sum27[8] co27[8] full_adder
+Xfa279 sum27[8] pp10[17] co26[9] sum27[9] co27[9] full_adder
+Xfa2710 sum27[9] pp11[16] co26[10] sum27[10] co27[10] full_adder
+Xfa2711 sum27[10] pp12[15] co26[11] sum27[11] co27[11] full_adder
+Xfa2712 sum27[11] pp13[14] co26[12] sum27[12] co27[12] full_adder
+Xfa2713 sum27[12] pp14[13] co26[13] sum27[13] co27[13] full_adder
+Xfa2714 sum27[13] pp15[12] co26[14] sum27[14] co27[14] full_adder
+Xfa2715 sum27[14] pp16[11] co26[15] sum27[15] co27[15] full_adder
+Xfa2716 sum27[15] pp17[10] co26[16] sum27[16] co27[16] full_adder
+Xfa2717 sum27[16] pp18[9] co26[17] sum27[17] co27[17] full_adder
+Xfa2718 sum27[17] pp19[8] co26[18] sum27[18] co27[18] full_adder
+Xfa2719 sum27[18] pp20[7] co26[19] sum27[19] co27[19] full_adder
+Xfa2720 sum27[19] pp21[6] co26[20] sum27[20] co27[20] full_adder
+Xfa2721 sum27[20] pp22[5] co26[21] sum27[21] co27[21] full_adder
+Xfa2722 sum27[21] pp23[4] co26[22] sum27[22] co27[22] full_adder
+Xfa2723 sum27[22] pp24[3] co26[23] sum27[23] co27[23] full_adder
+Xfa2724 sum27[23] pp25[2] co26[24] sum27[24] co27[24] full_adder
+Xfa2725 sum27[24] pp26[1] co26[25] sum27[25] co27[25] full_adder
+Xfa2726 sum27[25] pp27[0] 0 p[27] co27[26] full_adder
+
+Xfa280 pp0[28] pp1[27] co27[0] sum28[0] co28[0] full_adder
+Xfa281 sum28[0] pp2[26] co27[1] sum28[1] co28[1] full_adder
+Xfa282 sum28[1] pp3[25] co27[2] sum28[2] co28[2] full_adder
+Xfa283 sum28[2] pp4[24] co27[3] sum28[3] co28[3] full_adder
+Xfa284 sum28[3] pp5[23] co27[4] sum28[4] co28[4] full_adder
+Xfa285 sum28[4] pp6[22] co27[5] sum28[5] co28[5] full_adder
+Xfa286 sum28[5] pp7[21] co27[6] sum28[6] co28[6] full_adder
+Xfa287 sum28[6] pp8[20] co27[7] sum28[7] co28[7] full_adder
+Xfa288 sum28[7] pp9[19] co27[8] sum28[8] co28[8] full_adder
+Xfa289 sum28[8] pp10[18] co27[9] sum28[9] co28[9] full_adder
+Xfa2810 sum28[9] pp11[17] co27[10] sum28[10] co28[10] full_adder
+Xfa2811 sum28[10] pp12[16] co27[11] sum28[11] co28[11] full_adder
+Xfa2812 sum28[11] pp13[15] co27[12] sum28[12] co28[12] full_adder
+Xfa2813 sum28[12] pp14[14] co27[13] sum28[13] co28[13] full_adder
+Xfa2814 sum28[13] pp15[13] co27[14] sum28[14] co28[14] full_adder
+Xfa2815 sum28[14] pp16[12] co27[15] sum28[15] co28[15] full_adder
+Xfa2816 sum28[15] pp17[11] co27[16] sum28[16] co28[16] full_adder
+Xfa2817 sum28[16] pp18[10] co27[17] sum28[17] co28[17] full_adder
+Xfa2818 sum28[17] pp19[9] co27[18] sum28[18] co28[18] full_adder
+Xfa2819 sum28[18] pp20[8] co27[19] sum28[19] co28[19] full_adder
+Xfa2820 sum28[19] pp21[7] co27[20] sum28[20] co28[20] full_adder
+Xfa2821 sum28[20] pp22[6] co27[21] sum28[21] co28[21] full_adder
+Xfa2822 sum28[21] pp23[5] co27[22] sum28[22] co28[22] full_adder
+Xfa2823 sum28[22] pp24[4] co27[23] sum28[23] co28[23] full_adder
+Xfa2824 sum28[23] pp25[3] co27[24] sum28[24] co28[24] full_adder
+Xfa2825 sum28[24] pp26[2] co27[25] sum28[25] co28[25] full_adder
+Xfa2826 sum28[25] pp27[1] co27[26] sum28[26] co28[26] full_adder
+Xfa2827 sum28[26] pp28[0] 0 p[28] co28[27] full_adder
+
+Xfa290 pp0[29] pp1[28] co28[0] sum29[0] co29[0] full_adder
+Xfa291 sum29[0] pp2[27] co28[1] sum29[1] co29[1] full_adder
+Xfa292 sum29[1] pp3[26] co28[2] sum29[2] co29[2] full_adder
+Xfa293 sum29[2] pp4[25] co28[3] sum29[3] co29[3] full_adder
+Xfa294 sum29[3] pp5[24] co28[4] sum29[4] co29[4] full_adder
+Xfa295 sum29[4] pp6[23] co28[5] sum29[5] co29[5] full_adder
+Xfa296 sum29[5] pp7[22] co28[6] sum29[6] co29[6] full_adder
+Xfa297 sum29[6] pp8[21] co28[7] sum29[7] co29[7] full_adder
+Xfa298 sum29[7] pp9[20] co28[8] sum29[8] co29[8] full_adder
+Xfa299 sum29[8] pp10[19] co28[9] sum29[9] co29[9] full_adder
+Xfa2910 sum29[9] pp11[18] co28[10] sum29[10] co29[10] full_adder
+Xfa2911 sum29[10] pp12[17] co28[11] sum29[11] co29[11] full_adder
+Xfa2912 sum29[11] pp13[16] co28[12] sum29[12] co29[12] full_adder
+Xfa2913 sum29[12] pp14[15] co28[13] sum29[13] co29[13] full_adder
+Xfa2914 sum29[13] pp15[14] co28[14] sum29[14] co29[14] full_adder
+Xfa2915 sum29[14] pp16[13] co28[15] sum29[15] co29[15] full_adder
+Xfa2916 sum29[15] pp17[12] co28[16] sum29[16] co29[16] full_adder
+Xfa2917 sum29[16] pp18[11] co28[17] sum29[17] co29[17] full_adder
+Xfa2918 sum29[17] pp19[10] co28[18] sum29[18] co29[18] full_adder
+Xfa2919 sum29[18] pp20[9] co28[19] sum29[19] co29[19] full_adder
+Xfa2920 sum29[19] pp21[8] co28[20] sum29[20] co29[20] full_adder
+Xfa2921 sum29[20] pp22[7] co28[21] sum29[21] co29[21] full_adder
+Xfa2922 sum29[21] pp23[6] co28[22] sum29[22] co29[22] full_adder
+Xfa2923 sum29[22] pp24[5] co28[23] sum29[23] co29[23] full_adder
+Xfa2924 sum29[23] pp25[4] co28[24] sum29[24] co29[24] full_adder
+Xfa2925 sum29[24] pp26[3] co28[25] sum29[25] co29[25] full_adder
+Xfa2926 sum29[25] pp27[2] co28[26] sum29[26] co29[26] full_adder
+Xfa2927 sum29[26] pp28[1] co28[27] sum29[27] co29[27] full_adder
+Xfa2928 sum29[27] pp29[0] 0 p[29] co29[28] full_adder
+
+Xfa300 pp0[30] pp1[29] co29[0] sum30[0] co30[0] full_adder
+Xfa301 sum30[0] pp2[28] co29[1] sum30[1] co30[1] full_adder
+Xfa302 sum30[1] pp3[27] co29[2] sum30[2] co30[2] full_adder
+Xfa303 sum30[2] pp4[26] co29[3] sum30[3] co30[3] full_adder
+Xfa304 sum30[3] pp5[25] co29[4] sum30[4] co30[4] full_adder
+Xfa305 sum30[4] pp6[24] co29[5] sum30[5] co30[5] full_adder
+Xfa306 sum30[5] pp7[23] co29[6] sum30[6] co30[6] full_adder
+Xfa307 sum30[6] pp8[22] co29[7] sum30[7] co30[7] full_adder
+Xfa308 sum30[7] pp9[21] co29[8] sum30[8] co30[8] full_adder
+Xfa309 sum30[8] pp10[20] co29[9] sum30[9] co30[9] full_adder
+Xfa3010 sum30[9] pp11[19] co29[10] sum30[10] co30[10] full_adder
+Xfa3011 sum30[10] pp12[18] co29[11] sum30[11] co30[11] full_adder
+Xfa3012 sum30[11] pp13[17] co29[12] sum30[12] co30[12] full_adder
+Xfa3013 sum30[12] pp14[16] co29[13] sum30[13] co30[13] full_adder
+Xfa3014 sum30[13] pp15[15] co29[14] sum30[14] co30[14] full_adder
+Xfa3015 sum30[14] pp16[14] co29[15] sum30[15] co30[15] full_adder
+Xfa3016 sum30[15] pp17[13] co29[16] sum30[16] co30[16] full_adder
+Xfa3017 sum30[16] pp18[12] co29[17] sum30[17] co30[17] full_adder
+Xfa3018 sum30[17] pp19[11] co29[18] sum30[18] co30[18] full_adder
+Xfa3019 sum30[18] pp20[10] co29[19] sum30[19] co30[19] full_adder
+Xfa3020 sum30[19] pp21[9] co29[20] sum30[20] co30[20] full_adder
+Xfa3021 sum30[20] pp22[8] co29[21] sum30[21] co30[21] full_adder
+Xfa3022 sum30[21] pp23[7] co29[22] sum30[22] co30[22] full_adder
+Xfa3023 sum30[22] pp24[6] co29[23] sum30[23] co30[23] full_adder
+Xfa3024 sum30[23] pp25[5] co29[24] sum30[24] co30[24] full_adder
+Xfa3025 sum30[24] pp26[4] co29[25] sum30[25] co30[25] full_adder
+Xfa3026 sum30[25] pp27[3] co29[26] sum30[26] co30[26] full_adder
+Xfa3027 sum30[26] pp28[2] co29[27] sum30[27] co30[27] full_adder
+Xfa3028 sum30[27] pp29[1] co29[28] sum30[28] co30[28] full_adder
+Xfa3029 sum30[28] pp30[0] 0 p[30] co30[29] full_adder
+
+Xfa310 pp0[31] pp1[30] co30[0] sum31[0] co31[0] full_adder
+Xfa311 sum31[0] pp2[29] co30[1] sum31[1] co31[1] full_adder
+Xfa312 sum31[1] pp3[28] co30[2] sum31[2] co31[2] full_adder
+Xfa313 sum31[2] pp4[27] co30[3] sum31[3] co31[3] full_adder
+Xfa314 sum31[3] pp5[26] co30[4] sum31[4] co31[4] full_adder
+Xfa315 sum31[4] pp6[25] co30[5] sum31[5] co31[5] full_adder
+Xfa316 sum31[5] pp7[24] co30[6] sum31[6] co31[6] full_adder
+Xfa317 sum31[6] pp8[23] co30[7] sum31[7] co31[7] full_adder
+Xfa318 sum31[7] pp9[22] co30[8] sum31[8] co31[8] full_adder
+Xfa319 sum31[8] pp10[21] co30[9] sum31[9] co31[9] full_adder
+Xfa3110 sum31[9] pp11[20] co30[10] sum31[10] co31[10] full_adder
+Xfa3111 sum31[10] pp12[19] co30[11] sum31[11] co31[11] full_adder
+Xfa3112 sum31[11] pp13[18] co30[12] sum31[12] co31[12] full_adder
+Xfa3113 sum31[12] pp14[17] co30[13] sum31[13] co31[13] full_adder
+Xfa3114 sum31[13] pp15[16] co30[14] sum31[14] co31[14] full_adder
+Xfa3115 sum31[14] pp16[15] co30[15] sum31[15] co31[15] full_adder
+Xfa3116 sum31[15] pp17[14] co30[16] sum31[16] co31[16] full_adder
+Xfa3117 sum31[16] pp18[13] co30[17] sum31[17] co31[17] full_adder
+Xfa3118 sum31[17] pp19[12] co30[18] sum31[18] co31[18] full_adder
+Xfa3119 sum31[18] pp20[11] co30[19] sum31[19] co31[19] full_adder
+Xfa3120 sum31[19] pp21[10] co30[20] sum31[20] co31[20] full_adder
+Xfa3121 sum31[20] pp22[9] co30[21] sum31[21] co31[21] full_adder
+Xfa3122 sum31[21] pp23[8] co30[22] sum31[22] co31[22] full_adder
+Xfa3123 sum31[22] pp24[7] co30[23] sum31[23] co31[23] full_adder
+Xfa3124 sum31[23] pp25[6] co30[24] sum31[24] co31[24] full_adder
+Xfa3125 sum31[24] pp26[5] co30[25] sum31[25] co31[25] full_adder
+Xfa3126 sum31[25] pp27[4] co30[26] sum31[26] co31[26] full_adder
+Xfa3127 sum31[26] pp28[3] co30[27] sum31[27] co31[27] full_adder
+Xfa3128 sum31[27] pp29[2] co30[28] sum31[28] co31[28] full_adder
+Xfa3129 sum31[28] pp30[1] co30[29] sum31[29] co31[29] full_adder
+Xfa3130 sum31[29] pp31[0] 0 p[31] co31[30] full_adder
+
+.ends
