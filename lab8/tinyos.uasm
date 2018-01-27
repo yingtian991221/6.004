@@ -784,8 +784,8 @@ P3Start:
     HexPrt() 
     WrMsg()
     .text "\n"
-	Yield()			| Invoke scheduler
-	BR(P3Start)		
+    Yield()			| Invoke scheduler
+    BR(P3Start)		
 
 P3Stack: STORAGE(256)
 
